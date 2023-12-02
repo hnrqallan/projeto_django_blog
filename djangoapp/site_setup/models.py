@@ -53,7 +53,8 @@ class MenuLink(models.Model):
     new_tab = models.BooleanField(default=False)
     site_setup = models.ForeignKey(
         'SiteSetup', on_delete=models.CASCADE,
-        blank=True, null=True, default=None
+        blank=True, null=True, default=None,
+        related_name='menu'
     )
 
     def __str__(self):
