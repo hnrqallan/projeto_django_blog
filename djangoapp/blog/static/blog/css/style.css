@@ -467,3 +467,7 @@ html,
 .card-action-link:hover {
   text-decoration: none;
 }
+
+img {
+  margin: 0 auto;
+}
