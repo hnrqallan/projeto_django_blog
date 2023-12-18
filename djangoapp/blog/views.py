@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from blog.models import Post, Page
 from django.db.models import Q
 from django.contrib.auth.models import User
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404
 from django.views.generic import ListView
 
 
@@ -65,28 +65,63 @@ class TagListView(PostListView):
         return ctx
 
 
-def search(request):
-    search_value = request.GET.get('search', '').strip()
-    posts = Post.objects.get_published().filter(
-        # Título contém search_value OU
-        Q(title__icontains=search_value) |
-        # Excerto contém search_value OU
-        Q(excerpt__icontains=search_value) |
-        # Conteúdo contém search_value
-        Q(content__icontains=search_value)
-    )[:PER_PAGE]
+class SearchListView(PostListView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._search_value = ''
 
-    page_title = f'Search "{search_value[:30]}" - '
+    def setup(self, request, *args, **kwargs):
+        self._search_value = request.GET.get('search', '').strip()
+        return super().setup(request, *args, **kwargs)
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        {
-            'page_obj': posts,
-            'search_value': search_value,
-            'page_title': page_title,
-        }
-    )
+    def get_queryset(self):
+        search_value = self._search_value
+        return super().get_queryset().filter(
+            # Título contém search_value OU
+            Q(title__icontains=search_value) |
+            # Excerto contém search_value OU
+            Q(excerpt__icontains=search_value) |
+            # Conteúdo contém search_value
+            Q(content__icontains=search_value)
+        )[:PER_PAGE]
+
+    def get_context_data(self, **kwargs):
+        ctx =  super().get_context_data(**kwargs)
+        ctx.update({
+            'search_value': self._search_value,
+            'page_title': f'Search "{self._search_value[:30]}" - ',            
+        })
+        return ctx
+
+    def get(self, request, *args, **kwargs):
+        if self._search_value == '':
+            return redirect('blog:index')
+
+        return super().get(request, *args, **kwargs)
+
+
+# def search(request):
+#     search_value = request.GET.get('search', '').strip()
+#     posts = Post.objects.get_published().filter(
+#         # Título contém search_value OU
+#         Q(title__icontains=search_value) |
+#         # Excerto contém search_value OU
+#         Q(excerpt__icontains=search_value) |
+#         # Conteúdo contém search_value
+#         Q(content__icontains=search_value)
+#     )[:PER_PAGE]
+
+#     page_title = f'Search "{search_value[:30]}" - '
+
+#     return render(
+#         request,
+#         'blog/pages/index.html',
+#         {
+#             'page_obj': posts,
+#             'search_value': search_value,
+#             'page_title': page_title,
+#         }
+#     )
 
 
 class CreatedByListView(PostListView):
